@@ -1,3 +1,4 @@
+import copy
 import torch
 import numpy as np
 import torch.nn.functional as F
@@ -79,15 +80,15 @@ class STFT(torch.nn.Module):
             mode='reflect')
         input_data = input_data.squeeze(1)
 
-        forward_transform = F.conv1d(
+        self.forward_transform = F.conv1d(
             input_data,
             self.forward_basis,
             stride=self.hop_length,
             padding=0)
 
         cutoff = int((self.filter_length / 2) + 1)
-        real_part = forward_transform[:, :cutoff, :]
-        imag_part = forward_transform[:, cutoff:, :]
+        real_part = self.forward_transform[:, :cutoff, :]
+        imag_part = self.forward_transform[:, cutoff:, :]
 
         magnitude = torch.sqrt(real_part**2 + imag_part**2)
         phase = torch.atan2(imag_part.data, real_part.data)
@@ -116,6 +117,8 @@ class STFT(torch.nn.Module):
             self.inverse_basis,
             stride=self.hop_length,
             padding=0)
+
+        self.inverse_conv = copy.deepcopy(inverse_transform)
 
         if self.window is not None:
             window_sum = window_sumsquare(
